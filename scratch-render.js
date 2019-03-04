@@ -10540,6 +10540,18 @@ var Skin = function (_EventEmitter) {
     }
 
     /**
+     * Get the bounds of the drawable for determining its fenced position.
+     * @param {Array<number>} drawable - The Drawable instance this skin is using.
+     * @return {!Rectangle} The drawable's bounds.
+     */
+
+  }, {
+    key: 'getFenceBounds',
+    value: function getFenceBounds(drawable) {
+      return drawable.getFastBounds();
+    }
+
+    /**
      * Update and returns the uniforms for this skin.
      * @param {Array<number>} scale - The scaling factors to be used.
      * @returns {object.<string, *>} the shader uniforms to be used when rendering with this Skin.
@@ -10906,83 +10918,6 @@ module.exports = ShaderManager;
 
 /***/ }),
 /* 5 */
-/***/ (function(module, exports) {
-
-/* Adapted from
- * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
- * http://paperjs.org/
- *
- * Copyright (c) 2011 - 2016, Juerg Lehni & Jonathan Puckey
- * http://scratchdisk.com/ & http://jonathanpuckey.com/
- *
- * Distributed under the MIT license. See LICENSE file for details.
- *
- * All rights reserved.
- */
-
-/**
- * @name SvgElement
- * @namespace
- * @private
- */
-class SvgElement {
-    // SVG related namespaces
-    static get svg () {
-        return 'http://www.w3.org/2000/svg';
-    }
-    static get xmlns () {
-        return 'http://www.w3.org/2000/xmlns';
-    }
-    static get xlink () {
-        return 'http://www.w3.org/1999/xlink';
-    }
-
-    // Mapping of attribute names to required namespaces:
-    static attributeNamespace () {
-        return {
-            'href': SvgElement.xlink,
-            'xlink': SvgElement.xmlns,
-            // Only the xmlns attribute needs the trailing slash. See #984
-            'xmlns': `${SvgElement.xmlns}/`,
-            // IE needs the xmlns namespace when setting 'xmlns:xlink'. See #984
-            'xmlns:xlink': `${SvgElement.xmlns}/`
-        };
-    }
-
-    static create (tag, attributes, formatter) {
-        return SvgElement.set(document.createElementNS(SvgElement.svg, tag), attributes, formatter);
-    }
-
-    static get (node, name) {
-        const namespace = SvgElement.attributeNamespace[name];
-        const value = namespace ?
-            node.getAttributeNS(namespace, name) :
-            node.getAttribute(name);
-        return value === 'null' ? null : value;
-    }
-
-    static set (node, attributes, formatter) {
-        for (const name in attributes) {
-            let value = attributes[name];
-            const namespace = SvgElement.attributeNamespace[name];
-            if (typeof value === 'number' && formatter) {
-                value = formatter.number(value);
-            }
-            if (namespace) {
-                node.setAttributeNS(namespace, name, value);
-            } else {
-                node.setAttribute(name, value);
-            }
-        }
-        return node;
-    }
-}
-
-module.exports = SvgElement;
-
-
-/***/ }),
-/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11194,9 +11129,87 @@ var Rectangle = function () {
 module.exports = Rectangle;
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ (function(module, exports) {
 
+/* Adapted from
+ * Paper.js - The Swiss Army Knife of Vector Graphics Scripting.
+ * http://paperjs.org/
+ *
+ * Copyright (c) 2011 - 2016, Juerg Lehni & Jonathan Puckey
+ * http://scratchdisk.com/ & http://jonathanpuckey.com/
+ *
+ * Distributed under the MIT license. See LICENSE file for details.
+ *
+ * All rights reserved.
+ */
+
+/**
+ * @name SvgElement
+ * @namespace
+ * @private
+ */
+class SvgElement {
+    // SVG related namespaces
+    static get svg () {
+        return 'http://www.w3.org/2000/svg';
+    }
+    static get xmlns () {
+        return 'http://www.w3.org/2000/xmlns';
+    }
+    static get xlink () {
+        return 'http://www.w3.org/1999/xlink';
+    }
+
+    // Mapping of attribute names to required namespaces:
+    static attributeNamespace () {
+        return {
+            'href': SvgElement.xlink,
+            'xlink': SvgElement.xmlns,
+            // Only the xmlns attribute needs the trailing slash. See #984
+            'xmlns': `${SvgElement.xmlns}/`,
+            // IE needs the xmlns namespace when setting 'xmlns:xlink'. See #984
+            'xmlns:xlink': `${SvgElement.xmlns}/`
+        };
+    }
+
+    static create (tag, attributes, formatter) {
+        return SvgElement.set(document.createElementNS(SvgElement.svg, tag), attributes, formatter);
+    }
+
+    static get (node, name) {
+        const namespace = SvgElement.attributeNamespace[name];
+        const value = namespace ?
+            node.getAttributeNS(namespace, name) :
+            node.getAttribute(name);
+        return value === 'null' ? null : value;
+    }
+
+    static set (node, attributes, formatter) {
+        for (const name in attributes) {
+            let value = attributes[name];
+            const namespace = SvgElement.attributeNamespace[name];
+            if (typeof value === 'number' && formatter) {
+                value = formatter.number(value);
+            }
+            if (namespace) {
+                node.setAttributeNS(namespace, name, value);
+            } else {
+                node.setAttribute(name, value);
+            }
+        }
+        return node;
+    }
+}
+
+module.exports = SvgElement;
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -11218,9 +11231,39 @@ module.exports = Rectangle;
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 // USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+
+
+var R = typeof Reflect === 'object' ? Reflect : null
+var ReflectApply = R && typeof R.apply === 'function'
+  ? R.apply
+  : function ReflectApply(target, receiver, args) {
+    return Function.prototype.apply.call(target, receiver, args);
+  }
+
+var ReflectOwnKeys
+if (R && typeof R.ownKeys === 'function') {
+  ReflectOwnKeys = R.ownKeys
+} else if (Object.getOwnPropertySymbols) {
+  ReflectOwnKeys = function ReflectOwnKeys(target) {
+    return Object.getOwnPropertyNames(target)
+      .concat(Object.getOwnPropertySymbols(target));
+  };
+} else {
+  ReflectOwnKeys = function ReflectOwnKeys(target) {
+    return Object.getOwnPropertyNames(target);
+  };
+}
+
+function ProcessEmitWarning(warning) {
+  if (console && console.warn) console.warn(warning);
+}
+
+var NumberIsNaN = Number.isNaN || function NumberIsNaN(value) {
+  return value !== value;
+}
+
 function EventEmitter() {
-  this._events = this._events || {};
-  this._maxListeners = this._maxListeners || undefined;
+  EventEmitter.init.call(this);
 }
 module.exports = EventEmitter;
 
@@ -11228,276 +11271,392 @@ module.exports = EventEmitter;
 EventEmitter.EventEmitter = EventEmitter;
 
 EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._eventsCount = 0;
 EventEmitter.prototype._maxListeners = undefined;
 
 // By default EventEmitters will print a warning if more than 10 listeners are
 // added to it. This is a useful default which helps finding memory leaks.
-EventEmitter.defaultMaxListeners = 10;
+var defaultMaxListeners = 10;
+
+Object.defineProperty(EventEmitter, 'defaultMaxListeners', {
+  enumerable: true,
+  get: function() {
+    return defaultMaxListeners;
+  },
+  set: function(arg) {
+    if (typeof arg !== 'number' || arg < 0 || NumberIsNaN(arg)) {
+      throw new RangeError('The value of "defaultMaxListeners" is out of range. It must be a non-negative number. Received ' + arg + '.');
+    }
+    defaultMaxListeners = arg;
+  }
+});
+
+EventEmitter.init = function() {
+
+  if (this._events === undefined ||
+      this._events === Object.getPrototypeOf(this)._events) {
+    this._events = Object.create(null);
+    this._eventsCount = 0;
+  }
+
+  this._maxListeners = this._maxListeners || undefined;
+};
 
 // Obviously not all Emitters should be limited to 10. This function allows
 // that to be increased. Set to zero for unlimited.
-EventEmitter.prototype.setMaxListeners = function(n) {
-  if (!isNumber(n) || n < 0 || isNaN(n))
-    throw TypeError('n must be a positive number');
+EventEmitter.prototype.setMaxListeners = function setMaxListeners(n) {
+  if (typeof n !== 'number' || n < 0 || NumberIsNaN(n)) {
+    throw new RangeError('The value of "n" is out of range. It must be a non-negative number. Received ' + n + '.');
+  }
   this._maxListeners = n;
   return this;
 };
 
-EventEmitter.prototype.emit = function(type) {
-  var er, handler, len, args, i, listeners;
+function $getMaxListeners(that) {
+  if (that._maxListeners === undefined)
+    return EventEmitter.defaultMaxListeners;
+  return that._maxListeners;
+}
 
-  if (!this._events)
-    this._events = {};
+EventEmitter.prototype.getMaxListeners = function getMaxListeners() {
+  return $getMaxListeners(this);
+};
 
-  // If there is no 'error' event listener then throw.
-  if (type === 'error') {
-    if (!this._events.error ||
-        (isObject(this._events.error) && !this._events.error.length)) {
-      er = arguments[1];
-      if (er instanceof Error) {
-        throw er; // Unhandled 'error' event
-      } else {
-        // At least give some kind of context to the user
-        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
-        err.context = er;
-        throw err;
-      }
-    }
-  }
+EventEmitter.prototype.emit = function emit(type) {
+  var args = [];
+  for (var i = 1; i < arguments.length; i++) args.push(arguments[i]);
+  var doError = (type === 'error');
 
-  handler = this._events[type];
-
-  if (isUndefined(handler))
+  var events = this._events;
+  if (events !== undefined)
+    doError = (doError && events.error === undefined);
+  else if (!doError)
     return false;
 
-  if (isFunction(handler)) {
-    switch (arguments.length) {
-      // fast cases
-      case 1:
-        handler.call(this);
-        break;
-      case 2:
-        handler.call(this, arguments[1]);
-        break;
-      case 3:
-        handler.call(this, arguments[1], arguments[2]);
-        break;
-      // slower
-      default:
-        args = Array.prototype.slice.call(arguments, 1);
-        handler.apply(this, args);
+  // If there is no 'error' event listener then throw.
+  if (doError) {
+    var er;
+    if (args.length > 0)
+      er = args[0];
+    if (er instanceof Error) {
+      // Note: The comments on the `throw` lines are intentional, they show
+      // up in Node's output if this results in an unhandled exception.
+      throw er; // Unhandled 'error' event
     }
-  } else if (isObject(handler)) {
-    args = Array.prototype.slice.call(arguments, 1);
-    listeners = handler.slice();
-    len = listeners.length;
-    for (i = 0; i < len; i++)
-      listeners[i].apply(this, args);
+    // At least give some kind of context to the user
+    var err = new Error('Unhandled error.' + (er ? ' (' + er.message + ')' : ''));
+    err.context = er;
+    throw err; // Unhandled 'error' event
+  }
+
+  var handler = events[type];
+
+  if (handler === undefined)
+    return false;
+
+  if (typeof handler === 'function') {
+    ReflectApply(handler, this, args);
+  } else {
+    var len = handler.length;
+    var listeners = arrayClone(handler, len);
+    for (var i = 0; i < len; ++i)
+      ReflectApply(listeners[i], this, args);
   }
 
   return true;
 };
 
-EventEmitter.prototype.addListener = function(type, listener) {
+function _addListener(target, type, listener, prepend) {
   var m;
+  var events;
+  var existing;
 
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
+  if (typeof listener !== 'function') {
+    throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
+  }
 
-  if (!this._events)
-    this._events = {};
+  events = target._events;
+  if (events === undefined) {
+    events = target._events = Object.create(null);
+    target._eventsCount = 0;
+  } else {
+    // To avoid recursion in the case that type === "newListener"! Before
+    // adding it to the listeners, first emit "newListener".
+    if (events.newListener !== undefined) {
+      target.emit('newListener', type,
+                  listener.listener ? listener.listener : listener);
 
-  // To avoid recursion in the case that type === "newListener"! Before
-  // adding it to the listeners, first emit "newListener".
-  if (this._events.newListener)
-    this.emit('newListener', type,
-              isFunction(listener.listener) ?
-              listener.listener : listener);
+      // Re-assign `events` because a newListener handler could have caused the
+      // this._events to be assigned to a new object
+      events = target._events;
+    }
+    existing = events[type];
+  }
 
-  if (!this._events[type])
+  if (existing === undefined) {
     // Optimize the case of one listener. Don't need the extra array object.
-    this._events[type] = listener;
-  else if (isObject(this._events[type]))
-    // If we've already got an array, just append.
-    this._events[type].push(listener);
-  else
-    // Adding the second element, need to change to array.
-    this._events[type] = [this._events[type], listener];
-
-  // Check for listener leak
-  if (isObject(this._events[type]) && !this._events[type].warned) {
-    if (!isUndefined(this._maxListeners)) {
-      m = this._maxListeners;
+    existing = events[type] = listener;
+    ++target._eventsCount;
+  } else {
+    if (typeof existing === 'function') {
+      // Adding the second element, need to change to array.
+      existing = events[type] =
+        prepend ? [listener, existing] : [existing, listener];
+      // If we've already got an array, just append.
+    } else if (prepend) {
+      existing.unshift(listener);
     } else {
-      m = EventEmitter.defaultMaxListeners;
+      existing.push(listener);
     }
 
-    if (m && m > 0 && this._events[type].length > m) {
-      this._events[type].warned = true;
-      console.error('(node) warning: possible EventEmitter memory ' +
-                    'leak detected. %d listeners added. ' +
-                    'Use emitter.setMaxListeners() to increase limit.',
-                    this._events[type].length);
-      if (typeof console.trace === 'function') {
-        // not supported in IE 10
-        console.trace();
-      }
+    // Check for listener leak
+    m = $getMaxListeners(target);
+    if (m > 0 && existing.length > m && !existing.warned) {
+      existing.warned = true;
+      // No error code for this since it is a Warning
+      // eslint-disable-next-line no-restricted-syntax
+      var w = new Error('Possible EventEmitter memory leak detected. ' +
+                          existing.length + ' ' + String(type) + ' listeners ' +
+                          'added. Use emitter.setMaxListeners() to ' +
+                          'increase limit');
+      w.name = 'MaxListenersExceededWarning';
+      w.emitter = target;
+      w.type = type;
+      w.count = existing.length;
+      ProcessEmitWarning(w);
     }
   }
 
-  return this;
+  return target;
+}
+
+EventEmitter.prototype.addListener = function addListener(type, listener) {
+  return _addListener(this, type, listener, false);
 };
 
 EventEmitter.prototype.on = EventEmitter.prototype.addListener;
 
-EventEmitter.prototype.once = function(type, listener) {
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
+EventEmitter.prototype.prependListener =
+    function prependListener(type, listener) {
+      return _addListener(this, type, listener, true);
+    };
 
-  var fired = false;
-
-  function g() {
-    this.removeListener(type, g);
-
-    if (!fired) {
-      fired = true;
-      listener.apply(this, arguments);
-    }
+function onceWrapper() {
+  var args = [];
+  for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);
+  if (!this.fired) {
+    this.target.removeListener(this.type, this.wrapFn);
+    this.fired = true;
+    ReflectApply(this.listener, this.target, args);
   }
+}
 
-  g.listener = listener;
-  this.on(type, g);
+function _onceWrap(target, type, listener) {
+  var state = { fired: false, wrapFn: undefined, target: target, type: type, listener: listener };
+  var wrapped = onceWrapper.bind(state);
+  wrapped.listener = listener;
+  state.wrapFn = wrapped;
+  return wrapped;
+}
 
+EventEmitter.prototype.once = function once(type, listener) {
+  if (typeof listener !== 'function') {
+    throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
+  }
+  this.on(type, _onceWrap(this, type, listener));
   return this;
 };
 
-// emits a 'removeListener' event iff the listener was removed
-EventEmitter.prototype.removeListener = function(type, listener) {
-  var list, position, length, i;
-
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  if (!this._events || !this._events[type])
-    return this;
-
-  list = this._events[type];
-  length = list.length;
-  position = -1;
-
-  if (list === listener ||
-      (isFunction(list.listener) && list.listener === listener)) {
-    delete this._events[type];
-    if (this._events.removeListener)
-      this.emit('removeListener', type, listener);
-
-  } else if (isObject(list)) {
-    for (i = length; i-- > 0;) {
-      if (list[i] === listener ||
-          (list[i].listener && list[i].listener === listener)) {
-        position = i;
-        break;
+EventEmitter.prototype.prependOnceListener =
+    function prependOnceListener(type, listener) {
+      if (typeof listener !== 'function') {
+        throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
       }
-    }
-
-    if (position < 0)
+      this.prependListener(type, _onceWrap(this, type, listener));
       return this;
+    };
 
-    if (list.length === 1) {
-      list.length = 0;
-      delete this._events[type];
-    } else {
-      list.splice(position, 1);
-    }
+// Emits a 'removeListener' event if and only if the listener was removed.
+EventEmitter.prototype.removeListener =
+    function removeListener(type, listener) {
+      var list, events, position, i, originalListener;
 
-    if (this._events.removeListener)
-      this.emit('removeListener', type, listener);
-  }
+      if (typeof listener !== 'function') {
+        throw new TypeError('The "listener" argument must be of type Function. Received type ' + typeof listener);
+      }
 
-  return this;
+      events = this._events;
+      if (events === undefined)
+        return this;
+
+      list = events[type];
+      if (list === undefined)
+        return this;
+
+      if (list === listener || list.listener === listener) {
+        if (--this._eventsCount === 0)
+          this._events = Object.create(null);
+        else {
+          delete events[type];
+          if (events.removeListener)
+            this.emit('removeListener', type, list.listener || listener);
+        }
+      } else if (typeof list !== 'function') {
+        position = -1;
+
+        for (i = list.length - 1; i >= 0; i--) {
+          if (list[i] === listener || list[i].listener === listener) {
+            originalListener = list[i].listener;
+            position = i;
+            break;
+          }
+        }
+
+        if (position < 0)
+          return this;
+
+        if (position === 0)
+          list.shift();
+        else {
+          spliceOne(list, position);
+        }
+
+        if (list.length === 1)
+          events[type] = list[0];
+
+        if (events.removeListener !== undefined)
+          this.emit('removeListener', type, originalListener || listener);
+      }
+
+      return this;
+    };
+
+EventEmitter.prototype.off = EventEmitter.prototype.removeListener;
+
+EventEmitter.prototype.removeAllListeners =
+    function removeAllListeners(type) {
+      var listeners, events, i;
+
+      events = this._events;
+      if (events === undefined)
+        return this;
+
+      // not listening for removeListener, no need to emit
+      if (events.removeListener === undefined) {
+        if (arguments.length === 0) {
+          this._events = Object.create(null);
+          this._eventsCount = 0;
+        } else if (events[type] !== undefined) {
+          if (--this._eventsCount === 0)
+            this._events = Object.create(null);
+          else
+            delete events[type];
+        }
+        return this;
+      }
+
+      // emit removeListener for all listeners on all events
+      if (arguments.length === 0) {
+        var keys = Object.keys(events);
+        var key;
+        for (i = 0; i < keys.length; ++i) {
+          key = keys[i];
+          if (key === 'removeListener') continue;
+          this.removeAllListeners(key);
+        }
+        this.removeAllListeners('removeListener');
+        this._events = Object.create(null);
+        this._eventsCount = 0;
+        return this;
+      }
+
+      listeners = events[type];
+
+      if (typeof listeners === 'function') {
+        this.removeListener(type, listeners);
+      } else if (listeners !== undefined) {
+        // LIFO order
+        for (i = listeners.length - 1; i >= 0; i--) {
+          this.removeListener(type, listeners[i]);
+        }
+      }
+
+      return this;
+    };
+
+function _listeners(target, type, unwrap) {
+  var events = target._events;
+
+  if (events === undefined)
+    return [];
+
+  var evlistener = events[type];
+  if (evlistener === undefined)
+    return [];
+
+  if (typeof evlistener === 'function')
+    return unwrap ? [evlistener.listener || evlistener] : [evlistener];
+
+  return unwrap ?
+    unwrapListeners(evlistener) : arrayClone(evlistener, evlistener.length);
+}
+
+EventEmitter.prototype.listeners = function listeners(type) {
+  return _listeners(this, type, true);
 };
 
-EventEmitter.prototype.removeAllListeners = function(type) {
-  var key, listeners;
-
-  if (!this._events)
-    return this;
-
-  // not listening for removeListener, no need to emit
-  if (!this._events.removeListener) {
-    if (arguments.length === 0)
-      this._events = {};
-    else if (this._events[type])
-      delete this._events[type];
-    return this;
-  }
-
-  // emit removeListener for all listeners on all events
-  if (arguments.length === 0) {
-    for (key in this._events) {
-      if (key === 'removeListener') continue;
-      this.removeAllListeners(key);
-    }
-    this.removeAllListeners('removeListener');
-    this._events = {};
-    return this;
-  }
-
-  listeners = this._events[type];
-
-  if (isFunction(listeners)) {
-    this.removeListener(type, listeners);
-  } else if (listeners) {
-    // LIFO order
-    while (listeners.length)
-      this.removeListener(type, listeners[listeners.length - 1]);
-  }
-  delete this._events[type];
-
-  return this;
-};
-
-EventEmitter.prototype.listeners = function(type) {
-  var ret;
-  if (!this._events || !this._events[type])
-    ret = [];
-  else if (isFunction(this._events[type]))
-    ret = [this._events[type]];
-  else
-    ret = this._events[type].slice();
-  return ret;
-};
-
-EventEmitter.prototype.listenerCount = function(type) {
-  if (this._events) {
-    var evlistener = this._events[type];
-
-    if (isFunction(evlistener))
-      return 1;
-    else if (evlistener)
-      return evlistener.length;
-  }
-  return 0;
+EventEmitter.prototype.rawListeners = function rawListeners(type) {
+  return _listeners(this, type, false);
 };
 
 EventEmitter.listenerCount = function(emitter, type) {
-  return emitter.listenerCount(type);
+  if (typeof emitter.listenerCount === 'function') {
+    return emitter.listenerCount(type);
+  } else {
+    return listenerCount.call(emitter, type);
+  }
 };
 
-function isFunction(arg) {
-  return typeof arg === 'function';
+EventEmitter.prototype.listenerCount = listenerCount;
+function listenerCount(type) {
+  var events = this._events;
+
+  if (events !== undefined) {
+    var evlistener = events[type];
+
+    if (typeof evlistener === 'function') {
+      return 1;
+    } else if (evlistener !== undefined) {
+      return evlistener.length;
+    }
+  }
+
+  return 0;
 }
 
-function isNumber(arg) {
-  return typeof arg === 'number';
+EventEmitter.prototype.eventNames = function eventNames() {
+  return this._eventsCount > 0 ? ReflectOwnKeys(this._events) : [];
+};
+
+function arrayClone(arr, n) {
+  var copy = new Array(n);
+  for (var i = 0; i < n; ++i)
+    copy[i] = arr[i];
+  return copy;
 }
 
-function isObject(arg) {
-  return typeof arg === 'object' && arg !== null;
+function spliceOne(list, index) {
+  for (; index + 1 < list.length; index++)
+    list[index] = list[index + 1];
+  list.pop();
 }
 
-function isUndefined(arg) {
-  return arg === void 0;
+function unwrapListeners(arr) {
+  var ret = new Array(arr.length);
+  for (var i = 0; i < ret.length; ++i) {
+    ret[i] = arr[i].listener || arr[i];
+  }
+  return ret;
 }
 
 
@@ -11808,7 +11967,7 @@ module.exports = EffectTransform;
 const SVGRenderer = __webpack_require__(29);
 const BitmapAdapter = __webpack_require__(51);
 const inlineSvgFonts = __webpack_require__(10);
-const SvgElement = __webpack_require__(5);
+const SvgElement = __webpack_require__(6);
 const convertFonts = __webpack_require__(11);
 // /**
 //  * Export for NPM & Node.js
@@ -11827,7 +11986,6 @@ module.exports = {
 /* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const SvgElement = __webpack_require__(5);
 /**
  * @fileOverview Import bitmap data into Scratch 3.0, resizing image as necessary.
  */
@@ -11844,30 +12002,30 @@ const {FONTS} = __webpack_require__(30);
  *   // External stylesheet linked to by SVG: no effect.
  *   // Using a <link> or <style>@import</style> to link to font-family
  *   // injected into the document: no effect.
- * @param {SVGElement} svgTag The SVG dom object
- * @return {void}
+ * @param {string} svgString The string representation of the svg to modify
+ * @return {string} The svg with any needed fonts inlined
  */
-const inlineSvgFonts = function (svgTag) {
+const inlineSvgFonts = function (svgString) {
     // Collect fonts that need injection.
     const fontsNeeded = new Set();
-    const collectFonts = function collectFonts (domElement) {
-        if (domElement.getAttribute && domElement.getAttribute('font-family')) {
-            fontsNeeded.add(domElement.getAttribute('font-family'));
-        }
-        for (let i = 0; i < domElement.childNodes.length; i++) {
-            collectFonts(domElement.childNodes[i]);
-        }
-    };
-    collectFonts(svgTag);
-    const newDefs = SvgElement.create('defs');
-    const newStyle = SvgElement.create('style');
-    for (const font of fontsNeeded) {
-        if (FONTS.hasOwnProperty(font)) {
-            newStyle.textContent += FONTS[font];
-        }
+    const fontRegex = /font-family="([^"]*)"/g;
+    let matches = fontRegex.exec(svgString);
+    while (matches) {
+        fontsNeeded.add(matches[1]);
+        matches = fontRegex.exec(svgString);
     }
-    newDefs.appendChild(newStyle);
-    svgTag.insertBefore(newDefs, svgTag.childNodes[0]);
+    if (fontsNeeded.size > 0) {
+        let str = '<defs><style>';
+        for (const font of fontsNeeded) {
+            if (FONTS.hasOwnProperty(font)) {
+                str += `${FONTS[font]}`;
+            }
+        }
+        str += '</style></defs>';
+        svgString = svgString.replace(/<svg[^>]*>/, `$&${str}`);
+        return svgString;
+    }
+    return svgString;
 };
 
 module.exports = inlineSvgFonts;
@@ -12127,7 +12285,7 @@ var twgl = __webpack_require__(0);
 
 var BitmapSkin = __webpack_require__(22);
 var Drawable = __webpack_require__(24);
-var Rectangle = __webpack_require__(6);
+var Rectangle = __webpack_require__(5);
 var PenSkin = __webpack_require__(27);
 var RenderConstants = __webpack_require__(3);
 var ShaderManager = __webpack_require__(4);
@@ -12263,6 +12421,9 @@ var RenderWebGL = function (_EventEmitter) {
             throw new Error('Could not get WebGL context: this browser or environment may not support WebGL.');
         }
 
+        /** @type {RenderWebGL.UseGpuModes} */
+        _this._useGpuMode = RenderWebGL.UseGpuModes.Automatic;
+
         /** @type {Drawable[]} */
         _this._allDrawables = [];
 
@@ -12374,6 +12535,17 @@ var RenderWebGL = function (_EventEmitter) {
         key: 'setDebugCanvas',
         value: function setDebugCanvas(canvas) {
             this._debugCanvas = canvas;
+        }
+
+        /**
+         * Control the use of the GPU or CPU paths in `isTouchingColor`.
+         * @param {RenderWebGL.UseGpuModes} useGpuMode - automatically decide, force CPU, or force GPU.
+         */
+
+    }, {
+        key: 'setUseGpuMode',
+        value: function setUseGpuMode(useGpuMode) {
+            this._useGpuMode = useGpuMode;
         }
 
         /**
@@ -12934,9 +13106,16 @@ var RenderWebGL = function (_EventEmitter) {
 
             var bounds = this._candidatesBounds(candidates);
 
-            // if there are just too many pixels to CPU render efficently, we
-            // need to let readPixels happen
-            if (bounds.width * bounds.height * (candidates.length + 1) >= __cpuTouchingColorPixelCount) {
+            var maxPixelsForCPU = this._getMaxPixelsForCPU();
+
+            var debugCanvasContext = this._debugCanvas && this._debugCanvas.getContext('2d');
+            if (debugCanvasContext) {
+                this._debugCanvas.width = bounds.width;
+                this._debugCanvas.height = bounds.height;
+            }
+
+            // if there are just too many pixels to CPU render efficiently, we need to let readPixels happen
+            if (bounds.width * bounds.height * (candidates.length + 1) >= maxPixelsForCPU) {
                 this._isTouchingColorGpuStart(drawableID, candidates.map(function (_ref) {
                     var id = _ref.id;
                     return id;
@@ -12948,24 +13127,42 @@ var RenderWebGL = function (_EventEmitter) {
             var color = __touchingColor;
             var hasMask = Boolean(mask3b);
 
+            // Scratch Space - +y is top
             for (var y = bounds.bottom; y <= bounds.top; y++) {
-                if (bounds.width * (y - bounds.bottom) * (candidates.length + 1) >= __cpuTouchingColorPixelCount) {
+                if (bounds.width * (y - bounds.bottom) * (candidates.length + 1) >= maxPixelsForCPU) {
                     return this._isTouchingColorGpuFin(bounds, color3b, y - bounds.bottom);
                 }
-                // Scratch Space - +y is top
                 for (var x = bounds.left; x <= bounds.right; x++) {
                     point[1] = y;
                     point[0] = x;
-                    if (
-                    // if we use a mask, check our sample color
-                    (hasMask ? maskMatches(Drawable.sampleColor4b(point, drawable, color), mask3b) : drawable.isTouching(point)) &&
-                    // and the target color is drawn at this pixel
-                    colorMatches(RenderWebGL.sampleColor3b(point, candidates, color), color3b, 0)) {
-                        return true;
+                    // if we use a mask, check our sample color...
+                    if (hasMask ? maskMatches(Drawable.sampleColor4b(point, drawable, color), mask3b) : drawable.isTouching(point)) {
+                        RenderWebGL.sampleColor3b(point, candidates, color);
+                        if (debugCanvasContext) {
+                            debugCanvasContext.fillStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')';
+                            debugCanvasContext.fillRect(x - bounds.left, bounds.bottom - y, 1, 1);
+                        }
+                        // ...and the target color is drawn at this pixel
+                        if (colorMatches(color, color3b, 0)) {
+                            return true;
+                        }
                     }
                 }
             }
             return false;
+        }
+    }, {
+        key: '_getMaxPixelsForCPU',
+        value: function _getMaxPixelsForCPU() {
+            switch (this._useGpuMode) {
+                case RenderWebGL.UseGpuModes.ForceCPU:
+                    return Infinity;
+                case RenderWebGL.UseGpuModes.ForceGPU:
+                    return 0;
+                case RenderWebGL.UseGpuModes.Automatic:
+                default:
+                    return __cpuTouchingColorPixelCount;
+            }
         }
     }, {
         key: '_isTouchingColorGpuStart',
@@ -13161,7 +13358,11 @@ var RenderWebGL = function (_EventEmitter) {
             var worldPos = twgl.v3.create();
 
             drawable.updateMatrix();
-            drawable.skin.updateSilhouette();
+            if (drawable.skin) {
+                drawable.skin.updateSilhouette();
+            } else {
+                log.warn('Could not find skin for drawable with id: ' + drawableID);
+            }
 
             for (worldPos[1] = bounds.bottom; worldPos[1] <= bounds.top; worldPos[1]++) {
                 for (worldPos[0] = bounds.left; worldPos[0] <= bounds.right; worldPos[0]++) {
@@ -13198,7 +13399,11 @@ var RenderWebGL = function (_EventEmitter) {
                 // default pick list ignores visible and ghosted sprites.
                 if (drawable.getVisible() && drawable.getUniforms().u_ghost !== 0) {
                     drawable.updateMatrix();
-                    drawable.skin.updateSilhouette();
+                    if (drawable.skin) {
+                        drawable.skin.updateSilhouette();
+                    } else {
+                        log.warn('Could not find skin for drawable with id: ' + id);
+                    }
                     return true;
                 }
                 return false;
@@ -13278,10 +13483,24 @@ var RenderWebGL = function (_EventEmitter) {
             var scratchY = this._nativeSize[1] * (y / this._gl.canvas.clientHeight - 0.5);
 
             var gl = this._gl;
-            twgl.bindFramebufferInfo(gl, this._queryBufferInfo);
 
             var bounds = drawable.getFastBounds();
             bounds.snapToInt();
+
+            // Set a reasonable max limit width and height for the bufferInfo bounds
+            var maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+            var clampedWidth = Math.min(2048, bounds.width, maxTextureSize);
+            var clampedHeight = Math.min(2048, bounds.height, maxTextureSize);
+
+            // Make a new bufferInfo since this._queryBufferInfo is limited to 480x360
+            var attachments = [{ format: gl.RGBA }, { format: gl.DEPTH_STENCIL }];
+            var bufferInfo = twgl.createFramebufferInfo(gl, attachments, clampedWidth, clampedHeight);
+
+            // If the new bufferInfo is invalid, fall back to using the smaller _queryBufferInfo
+            twgl.bindFramebufferInfo(gl, bufferInfo);
+            if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+                twgl.bindFramebufferInfo(gl, this._queryBufferInfo);
+            }
 
             // Translate to scratch units relative to the drawable
             var pickX = scratchX - bounds.left;
@@ -13544,20 +13763,20 @@ var RenderWebGL = function (_EventEmitter) {
 
             var dx = x - drawable._position[0];
             var dy = y - drawable._position[1];
+            var aabb = drawable._skin.getFenceBounds(drawable);
+            var inset = Math.floor(Math.min(aabb.width, aabb.height) / 2);
 
-            var aabb = drawable.getFastBounds();
-
-            var sx = this._xRight - Math.min(FENCE_WIDTH, Math.floor((aabb.right - aabb.left) / 2));
+            var sx = this._xRight - Math.min(FENCE_WIDTH, inset);
             if (aabb.right + dx < -sx) {
-                x = drawable._position[0] - (sx + aabb.right);
+                x = Math.ceil(drawable._position[0] - (sx + aabb.right));
             } else if (aabb.left + dx > sx) {
-                x = drawable._position[0] + (sx - aabb.left);
+                x = Math.floor(drawable._position[0] + (sx - aabb.left));
             }
-            var sy = this._yTop - Math.min(FENCE_WIDTH, Math.floor((aabb.top - aabb.bottom) / 2));
+            var sy = this._yTop - Math.min(FENCE_WIDTH, inset);
             if (aabb.top + dy < -sy) {
-                y = drawable._position[1] - (sy + aabb.top);
+                y = Math.ceil(drawable._position[1] - (sy + aabb.top));
             } else if (aabb.bottom + dy > sy) {
-                y = drawable._position[1] + (sy - aabb.bottom);
+                y = Math.floor(drawable._position[1] + (sy - aabb.bottom));
             }
             return [x, y];
         }
@@ -14050,6 +14269,27 @@ var RenderWebGL = function (_EventEmitter) {
 
 RenderWebGL.prototype.canHazPixels = RenderWebGL.prototype.extractDrawable;
 
+/**
+ * Values for setUseGPU()
+ * @enum {string}
+ */
+RenderWebGL.UseGpuModes = {
+    /**
+     * Heuristically decide whether to use the GPU path, the CPU path, or a dynamic mixture of the two.
+     */
+    Automatic: 'Automatic',
+
+    /**
+     * Always use the GPU path.
+     */
+    ForceGPU: 'ForceGPU',
+
+    /**
+     * Always use the CPU path.
+     */
+    ForceCPU: 'ForceCPU'
+};
+
 module.exports = RenderWebGL;
 
 /***/ }),
@@ -14519,6 +14759,18 @@ var BitmapSkin = function (_Skin) {
         }
 
         /**
+         * Get the bounds of the drawable for determining its fenced position.
+         * @param {Array<number>} drawable - The Drawable instance this skin is using.
+         * @return {!Rectangle} The drawable's bounds. For compatibility with Scratch 2, we always use getAABB for bitmaps.
+         */
+
+    }, {
+        key: 'getFenceBounds',
+        value: function getFenceBounds(drawable) {
+            return drawable.getAABB();
+        }
+
+        /**
          * Set the contents of this skin to a snapshot of the provided bitmap data.
          * @param {ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement} bitmapData - new contents for this skin.
          * @param {int} [costumeResolution=1] - The resolution to use for this bitmap.
@@ -14848,7 +15100,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 var twgl = __webpack_require__(0);
 
-var Rectangle = __webpack_require__(6);
+var Rectangle = __webpack_require__(5);
 var RenderConstants = __webpack_require__(3);
 var ShaderManager = __webpack_require__(4);
 var Skin = __webpack_require__(2);
@@ -15381,11 +15633,13 @@ var Drawable = function () {
         value: function _getTransformedHullPoints() {
             var projection = twgl.m4.ortho(-1, 1, -1, 1, -1, 1);
             var skinSize = this.skin.size;
+            var halfXPixel = 1 / skinSize[0] / 2;
+            var halfYPixel = 1 / skinSize[1] / 2;
             var tm = twgl.m4.multiply(this._uniforms.u_modelMatrix, projection);
             var transformedHullPoints = [];
             for (var i = 0; i < this._convexHullPoints.length; i++) {
                 var point = this._convexHullPoints[i];
-                var glPoint = twgl.v3.create(0.5 + -point[0] / skinSize[0], point[1] / skinSize[1] - 0.5, 0);
+                var glPoint = twgl.v3.create(0.5 + -point[0] / skinSize[0] - halfXPixel, point[1] / skinSize[1] - 0.5 + halfYPixel, 0);
                 twgl.m4.transformPoint(tm, glPoint, glPoint);
                 transformedHullPoints.push(glPoint);
             }
@@ -15482,14 +15736,14 @@ var Drawable = function () {
     }, {
         key: 'useNearest',
         get: function get() {
-            // We can't use nearest neighbor unless we are a multiple of 90 rotation
-            if (this._direction % 90 !== 0) {
-                return false;
-            }
-
             // Raster skins (bitmaps) should always prefer nearest neighbor
             if (this.skin.isRaster) {
                 return true;
+            }
+
+            // We can't use nearest neighbor unless we are a multiple of 90 rotation
+            if (this._direction % 90 !== 0) {
+                return false;
             }
 
             // If the scale of the skin is very close to 100 (0.99999 variance is okay I guess)
@@ -15568,7 +15822,7 @@ module.exports = "uniform mat4 u_projectionMatrix;\nuniform mat4 u_modelMatrix;\
 /* 26 */
 /***/ (function(module, exports) {
 
-module.exports = "precision mediump float;\n\nuniform float u_fudge;\n\n#ifdef DRAW_MODE_silhouette\nuniform vec4 u_silhouetteColor;\n#else // DRAW_MODE_silhouette\n# ifdef ENABLE_color\nuniform float u_color;\n# endif // ENABLE_color\n# ifdef ENABLE_brightness\nuniform float u_brightness;\n# endif // ENABLE_brightness\n#endif // DRAW_MODE_silhouette\n\n#ifdef DRAW_MODE_colorMask\nuniform vec3 u_colorMask;\nuniform float u_colorMaskTolerance;\n#endif // DRAW_MODE_colorMask\n\n#ifdef ENABLE_fisheye\nuniform float u_fisheye;\n#endif // ENABLE_fisheye\n#ifdef ENABLE_whirl\nuniform float u_whirl;\n#endif // ENABLE_whirl\n#ifdef ENABLE_pixelate\nuniform float u_pixelate;\nuniform vec2 u_skinSize;\n#endif // ENABLE_pixelate\n#ifdef ENABLE_mosaic\nuniform float u_mosaic;\n#endif // ENABLE_mosaic\n#ifdef ENABLE_ghost\nuniform float u_ghost;\n#endif // ENABLE_ghost\n\n#ifdef DRAW_MODE_lineSample\nuniform vec4 u_lineColor;\nuniform float u_capScale;\nuniform float u_aliasAmount;\n#endif // DRAW_MODE_lineSample\n\nuniform sampler2D u_skin;\n\nvarying vec2 v_texCoord;\n\n#if !defined(DRAW_MODE_silhouette) && (defined(ENABLE_color) || defined(ENABLE_brightness))\n// Branchless color conversions based on code from:\n// http://www.chilliant.com/rgb2hsv.html by Ian Taylor\n// Based in part on work by Sam Hocevar and Emil Persson\n// See also: https://en.wikipedia.org/wiki/HSL_and_HSV#Formal_derivation\n\n// Smaller values can cause problems with \"color\" and \"brightness\" effects on some mobile devices\nconst float epsilon = 1e-3;\n\n// Convert an RGB color to Hue, Saturation, and Value.\n// All components of input and output are expected to be in the [0,1] range.\nvec3 convertRGB2HSV(vec3 rgb)\n{\n\t// Hue calculation has 3 cases, depending on which RGB component is largest, and one of those cases involves a \"mod\"\n\t// operation. In order to avoid that \"mod\" we split the M==R case in two: one for G<B and one for B>G. The B>G case\n\t// will be calculated in the negative and fed through abs() in the hue calculation at the end.\n\t// See also: https://en.wikipedia.org/wiki/HSL_and_HSV#Hue_and_chroma\n\tconst vec4 hueOffsets = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);\n\n\t// temp1.xy = sort B & G (largest first)\n\t// temp1.z = the hue offset we'll use if it turns out that R is the largest component (M==R)\n\t// temp1.w = the hue offset we'll use if it turns out that R is not the largest component (M==G or M==B)\n\tvec4 temp1 = rgb.b > rgb.g ? vec4(rgb.bg, hueOffsets.wz) : vec4(rgb.gb, hueOffsets.xy);\n\n\t// temp2.x = the largest component of RGB (\"M\" / \"Max\")\n\t// temp2.yw = the smaller components of RGB, ordered for the hue calculation (not necessarily sorted by magnitude!)\n\t// temp2.z = the hue offset we'll use in the hue calculation\n\tvec4 temp2 = rgb.r > temp1.x ? vec4(rgb.r, temp1.yzx) : vec4(temp1.xyw, rgb.r);\n\n\t// m = the smallest component of RGB (\"min\")\n\tfloat m = min(temp2.y, temp2.w);\n\n\t// Chroma = M - m\n\tfloat C = temp2.x - m;\n\n\t// Value = M\n\tfloat V = temp2.x;\n\n\treturn vec3(\n\t\tabs(temp2.z + (temp2.w - temp2.y) / (6.0 * C + epsilon)), // Hue\n\t\tC / (temp2.x + epsilon), // Saturation\n\t\tV); // Value\n}\n\nvec3 convertHue2RGB(float hue)\n{\n\tfloat r = abs(hue * 6.0 - 3.0) - 1.0;\n\tfloat g = 2.0 - abs(hue * 6.0 - 2.0);\n\tfloat b = 2.0 - abs(hue * 6.0 - 4.0);\n\treturn clamp(vec3(r, g, b), 0.0, 1.0);\n}\n\nvec3 convertHSV2RGB(vec3 hsv)\n{\n\tvec3 rgb = convertHue2RGB(hsv.x);\n\tfloat c = hsv.z * hsv.y;\n\treturn rgb * c + hsv.z - c;\n}\n#endif // !defined(DRAW_MODE_silhouette) && (defined(ENABLE_color) || defined(ENABLE_brightness))\n\nconst vec2 kCenter = vec2(0.5, 0.5);\n\nvoid main()\n{\n\t#ifndef DRAW_MODE_lineSample\n\tvec2 texcoord0 = v_texCoord;\n\n\t#ifdef ENABLE_mosaic\n\ttexcoord0 = fract(u_mosaic * texcoord0);\n\t#endif // ENABLE_mosaic\n\n\t#ifdef ENABLE_pixelate\n\t{\n\t\t// TODO: clean up \"pixel\" edges\n\t\tvec2 pixelTexelSize = u_skinSize / u_pixelate;\n\t\ttexcoord0 = (floor(texcoord0 * pixelTexelSize) + kCenter) / pixelTexelSize;\n\t}\n\t#endif // ENABLE_pixelate\n\n\t#ifdef ENABLE_whirl\n\t{\n\t\tconst float kRadius = 0.5;\n\t\tvec2 offset = texcoord0 - kCenter;\n\t\tfloat offsetMagnitude = length(offset);\n\t\tfloat whirlFactor = max(1.0 - (offsetMagnitude / kRadius), 0.0);\n\t\tfloat whirlActual = u_whirl * whirlFactor * whirlFactor;\n\t\tfloat sinWhirl = sin(whirlActual);\n\t\tfloat cosWhirl = cos(whirlActual);\n\t\tmat2 rotationMatrix = mat2(\n\t\t\tcosWhirl, -sinWhirl,\n\t\t\tsinWhirl, cosWhirl\n\t\t);\n\n\t\ttexcoord0 = rotationMatrix * offset + kCenter;\n\t}\n\t#endif // ENABLE_whirl\n\n\t#ifdef ENABLE_fisheye\n\t{\n\t\tvec2 vec = (texcoord0 - kCenter) / kCenter;\n\t\tfloat vecLength = length(vec);\n\t\tfloat r = pow(min(vecLength, 1.0), u_fisheye) * max(1.0, vecLength);\n\t\tvec2 unit = vec / vecLength;\n\n\t\ttexcoord0 = kCenter + r * unit * kCenter;\n\t}\n\t#endif // ENABLE_fisheye\n\n\tgl_FragColor = texture2D(u_skin, texcoord0);\n\n    #ifdef ENABLE_ghost\n    gl_FragColor.a *= u_ghost;\n    #endif // ENABLE_ghost\n\n\t#ifdef DRAW_MODE_silhouette\n\t// switch to u_silhouetteColor only AFTER the alpha test\n\tgl_FragColor = u_silhouetteColor;\n\t#else // DRAW_MODE_silhouette\n\n\t#if defined(ENABLE_color) || defined(ENABLE_brightness)\n\t{\n\t\tvec3 hsv = convertRGB2HSV(gl_FragColor.xyz);\n\n\t\t#ifdef ENABLE_color\n\t\t{\n\t\t\t// this code forces grayscale values to be slightly saturated\n\t\t\t// so that some slight change of hue will be visible\n\t\t\tconst float minLightness = 0.11 / 2.0;\n\t\t\tconst float minSaturation = 0.09;\n\t\t\tif (hsv.z < minLightness) hsv = vec3(0.0, 1.0, minLightness);\n\t\t\telse if (hsv.y < minSaturation) hsv = vec3(0.0, minSaturation, hsv.z);\n\n\t\t\thsv.x = mod(hsv.x + u_color, 1.0);\n\t\t\tif (hsv.x < 0.0) hsv.x += 1.0;\n\t\t}\n\t\t#endif // ENABLE_color\n\n\t\t#ifdef ENABLE_brightness\n\t\thsv.z = clamp(hsv.z + u_brightness, 0.0, 1.0);\n\t\t#endif // ENABLE_brightness\n\n\t\tgl_FragColor.rgb = convertHSV2RGB(hsv);\n\t}\n\t#endif // defined(ENABLE_color) || defined(ENABLE_brightness)\n\n\t#ifdef DRAW_MODE_colorMask\n\tvec3 maskDistance = abs(gl_FragColor.rgb - u_colorMask);\n\tvec3 colorMaskTolerance = vec3(u_colorMaskTolerance, u_colorMaskTolerance, u_colorMaskTolerance);\n\tif (any(greaterThan(maskDistance, colorMaskTolerance)))\n\t{\n\t\tdiscard;\n\t}\n\t#endif // DRAW_MODE_colorMask\n\n\t// WebGL defaults to premultiplied alpha\n\t#ifndef DRAW_MODE_stamp\n\tgl_FragColor.rgb *= gl_FragColor.a;\n\t#endif // DRAW_MODE_stamp\n\n\t#endif // DRAW_MODE_silhouette\n\n\t#else // DRAW_MODE_lineSample\n\tgl_FragColor = u_lineColor;\n\tgl_FragColor.a *= clamp(\n\t\t// Scale the capScale a little to have an aliased region.\n\t\t(u_capScale + u_aliasAmount -\n\t\t\tu_capScale * 2.0 * distance(v_texCoord, vec2(0.5, 0.5))\n\t\t) / (u_aliasAmount + 1.0),\n\t\t0.0,\n\t\t1.0\n\t);\n\t#endif // DRAW_MODE_lineSample\n}\n"
+module.exports = "precision mediump float;\n\nuniform float u_fudge;\n\n#ifdef DRAW_MODE_silhouette\nuniform vec4 u_silhouetteColor;\n#else // DRAW_MODE_silhouette\n# ifdef ENABLE_color\nuniform float u_color;\n# endif // ENABLE_color\n# ifdef ENABLE_brightness\nuniform float u_brightness;\n# endif // ENABLE_brightness\n#endif // DRAW_MODE_silhouette\n\n#ifdef DRAW_MODE_colorMask\nuniform vec3 u_colorMask;\nuniform float u_colorMaskTolerance;\n#endif // DRAW_MODE_colorMask\n\n#ifdef ENABLE_fisheye\nuniform float u_fisheye;\n#endif // ENABLE_fisheye\n#ifdef ENABLE_whirl\nuniform float u_whirl;\n#endif // ENABLE_whirl\n#ifdef ENABLE_pixelate\nuniform float u_pixelate;\nuniform vec2 u_skinSize;\n#endif // ENABLE_pixelate\n#ifdef ENABLE_mosaic\nuniform float u_mosaic;\n#endif // ENABLE_mosaic\n#ifdef ENABLE_ghost\nuniform float u_ghost;\n#endif // ENABLE_ghost\n\n#ifdef DRAW_MODE_lineSample\nuniform vec4 u_lineColor;\nuniform float u_capScale;\nuniform float u_aliasAmount;\n#endif // DRAW_MODE_lineSample\n\nuniform sampler2D u_skin;\n\nvarying vec2 v_texCoord;\n\n#if !defined(DRAW_MODE_silhouette) && (defined(ENABLE_color))\n// Branchless color conversions based on code from:\n// http://www.chilliant.com/rgb2hsv.html by Ian Taylor\n// Based in part on work by Sam Hocevar and Emil Persson\n// See also: https://en.wikipedia.org/wiki/HSL_and_HSV#Formal_derivation\n\n// Smaller values can cause problems on some mobile devices\nconst float epsilon = 1e-3;\n\n// Convert an RGB color to Hue, Saturation, and Value.\n// All components of input and output are expected to be in the [0,1] range.\nvec3 convertRGB2HSV(vec3 rgb)\n{\n\t// Hue calculation has 3 cases, depending on which RGB component is largest, and one of those cases involves a \"mod\"\n\t// operation. In order to avoid that \"mod\" we split the M==R case in two: one for G<B and one for B>G. The B>G case\n\t// will be calculated in the negative and fed through abs() in the hue calculation at the end.\n\t// See also: https://en.wikipedia.org/wiki/HSL_and_HSV#Hue_and_chroma\n\tconst vec4 hueOffsets = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);\n\n\t// temp1.xy = sort B & G (largest first)\n\t// temp1.z = the hue offset we'll use if it turns out that R is the largest component (M==R)\n\t// temp1.w = the hue offset we'll use if it turns out that R is not the largest component (M==G or M==B)\n\tvec4 temp1 = rgb.b > rgb.g ? vec4(rgb.bg, hueOffsets.wz) : vec4(rgb.gb, hueOffsets.xy);\n\n\t// temp2.x = the largest component of RGB (\"M\" / \"Max\")\n\t// temp2.yw = the smaller components of RGB, ordered for the hue calculation (not necessarily sorted by magnitude!)\n\t// temp2.z = the hue offset we'll use in the hue calculation\n\tvec4 temp2 = rgb.r > temp1.x ? vec4(rgb.r, temp1.yzx) : vec4(temp1.xyw, rgb.r);\n\n\t// m = the smallest component of RGB (\"min\")\n\tfloat m = min(temp2.y, temp2.w);\n\n\t// Chroma = M - m\n\tfloat C = temp2.x - m;\n\n\t// Value = M\n\tfloat V = temp2.x;\n\n\treturn vec3(\n\t\tabs(temp2.z + (temp2.w - temp2.y) / (6.0 * C + epsilon)), // Hue\n\t\tC / (temp2.x + epsilon), // Saturation\n\t\tV); // Value\n}\n\nvec3 convertHue2RGB(float hue)\n{\n\tfloat r = abs(hue * 6.0 - 3.0) - 1.0;\n\tfloat g = 2.0 - abs(hue * 6.0 - 2.0);\n\tfloat b = 2.0 - abs(hue * 6.0 - 4.0);\n\treturn clamp(vec3(r, g, b), 0.0, 1.0);\n}\n\nvec3 convertHSV2RGB(vec3 hsv)\n{\n\tvec3 rgb = convertHue2RGB(hsv.x);\n\tfloat c = hsv.z * hsv.y;\n\treturn rgb * c + hsv.z - c;\n}\n#endif // !defined(DRAW_MODE_silhouette) && (defined(ENABLE_color))\n\nconst vec2 kCenter = vec2(0.5, 0.5);\n\nvoid main()\n{\n\t#ifndef DRAW_MODE_lineSample\n\tvec2 texcoord0 = v_texCoord;\n\n\t#ifdef ENABLE_mosaic\n\ttexcoord0 = fract(u_mosaic * texcoord0);\n\t#endif // ENABLE_mosaic\n\n\t#ifdef ENABLE_pixelate\n\t{\n\t\t// TODO: clean up \"pixel\" edges\n\t\tvec2 pixelTexelSize = u_skinSize / u_pixelate;\n\t\ttexcoord0 = (floor(texcoord0 * pixelTexelSize) + kCenter) / pixelTexelSize;\n\t}\n\t#endif // ENABLE_pixelate\n\n\t#ifdef ENABLE_whirl\n\t{\n\t\tconst float kRadius = 0.5;\n\t\tvec2 offset = texcoord0 - kCenter;\n\t\tfloat offsetMagnitude = length(offset);\n\t\tfloat whirlFactor = max(1.0 - (offsetMagnitude / kRadius), 0.0);\n\t\tfloat whirlActual = u_whirl * whirlFactor * whirlFactor;\n\t\tfloat sinWhirl = sin(whirlActual);\n\t\tfloat cosWhirl = cos(whirlActual);\n\t\tmat2 rotationMatrix = mat2(\n\t\t\tcosWhirl, -sinWhirl,\n\t\t\tsinWhirl, cosWhirl\n\t\t);\n\n\t\ttexcoord0 = rotationMatrix * offset + kCenter;\n\t}\n\t#endif // ENABLE_whirl\n\n\t#ifdef ENABLE_fisheye\n\t{\n\t\tvec2 vec = (texcoord0 - kCenter) / kCenter;\n\t\tfloat vecLength = length(vec);\n\t\tfloat r = pow(min(vecLength, 1.0), u_fisheye) * max(1.0, vecLength);\n\t\tvec2 unit = vec / vecLength;\n\n\t\ttexcoord0 = kCenter + r * unit * kCenter;\n\t}\n\t#endif // ENABLE_fisheye\n\n\tgl_FragColor = texture2D(u_skin, texcoord0);\n\n    #ifdef ENABLE_ghost\n    gl_FragColor.a *= u_ghost;\n    #endif // ENABLE_ghost\n\n\t#ifdef DRAW_MODE_silhouette\n\t// switch to u_silhouetteColor only AFTER the alpha test\n\tgl_FragColor = u_silhouetteColor;\n\t#else // DRAW_MODE_silhouette\n\n\t#if defined(ENABLE_color)\n\t{\n\t\tvec3 hsv = convertRGB2HSV(gl_FragColor.xyz);\n\n\t\t// this code forces grayscale values to be slightly saturated\n\t\t// so that some slight change of hue will be visible\n\t\tconst float minLightness = 0.11 / 2.0;\n\t\tconst float minSaturation = 0.09;\n\t\tif (hsv.z < minLightness) hsv = vec3(0.0, 1.0, minLightness);\n\t\telse if (hsv.y < minSaturation) hsv = vec3(0.0, minSaturation, hsv.z);\n\n\t\thsv.x = mod(hsv.x + u_color, 1.0);\n\t\tif (hsv.x < 0.0) hsv.x += 1.0;\n\n\t\tgl_FragColor.rgb = convertHSV2RGB(hsv);\n\t}\n\t#endif // defined(ENABLE_color)\n\n\t#if defined(ENABLE_brightness)\n\tgl_FragColor.rgb = clamp(gl_FragColor.rgb + vec3(u_brightness), vec3(0), vec3(1));\n\t#endif // defined(ENABLE_brightness)\n\n\t#ifdef DRAW_MODE_colorMask\n\tvec3 maskDistance = abs(gl_FragColor.rgb - u_colorMask);\n\tvec3 colorMaskTolerance = vec3(u_colorMaskTolerance, u_colorMaskTolerance, u_colorMaskTolerance);\n\tif (any(greaterThan(maskDistance, colorMaskTolerance)))\n\t{\n\t\tdiscard;\n\t}\n\t#endif // DRAW_MODE_colorMask\n\n\t// WebGL defaults to premultiplied alpha\n\t#ifndef DRAW_MODE_stamp\n\tgl_FragColor.rgb *= gl_FragColor.a;\n\t#endif // DRAW_MODE_stamp\n\n\t#endif // DRAW_MODE_silhouette\n\n\t#else // DRAW_MODE_lineSample\n\tgl_FragColor = u_lineColor;\n\tgl_FragColor.a *= clamp(\n\t\t// Scale the capScale a little to have an aliased region.\n\t\t(u_capScale + u_aliasAmount -\n\t\t\tu_capScale * 2.0 * distance(v_texCoord, vec2(0.5, 0.5))\n\t\t) / (u_aliasAmount + 1.0),\n\t\t0.0,\n\t\t1.0\n\t);\n\t#endif // DRAW_MODE_lineSample\n}\n"
 
 /***/ }),
 /* 27 */
@@ -15594,7 +15848,7 @@ var twgl = __webpack_require__(0);
 var RenderConstants = __webpack_require__(3);
 var Skin = __webpack_require__(2);
 
-var Rectangle = __webpack_require__(6);
+var Rectangle = __webpack_require__(5);
 var ShaderManager = __webpack_require__(4);
 
 /**
@@ -16371,6 +16625,7 @@ var SVGSkin = function (_Skin) {
                         var gl = _this2._renderer.gl;
                         gl.bindTexture(gl.TEXTURE_2D, _this2._texture);
                         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, _this2._svgRenderer.canvas);
+                        _this2._silhouette.update(_this2._svgRenderer.canvas);
                     }
                 });
             }
@@ -16438,7 +16693,7 @@ module.exports = SVGSkin;
 /***/ (function(module, exports, __webpack_require__) {
 
 const inlineSvgFonts = __webpack_require__(10);
-const SvgElement = __webpack_require__(5);
+const SvgElement = __webpack_require__(6);
 const convertFonts = __webpack_require__(11);
 const fixupSvgString = __webpack_require__(38);
 const transformStrokeWidths = __webpack_require__(39);
@@ -16531,6 +16786,7 @@ class SvgRenderer {
             this._transformGradients();
         }
         transformStrokeWidths(this._svgTag, window);
+        this._transformImages(this._svgTag);
         if (fromVersion2) {
             // Transform all text elements.
             this._transformText();
@@ -16648,25 +16904,53 @@ class SvgRenderer {
     }
 
     /**
-     * Fix SVGs to comply with SVG spec. Scratch 2 defaults to x2 = 0 when x2 is missing, but
-     * SVG defaults to x2 = 1 when missing.
+     * @param {string} tagName svg tag to search for
+     * @return {Array} a list of elements with the given tagname in _svgTag
      */
-    _transformGradients () {
-        // Collect all gradient elements into a list.
-        const linearGradientElements = [];
+    _collectElements (tagName) {
+        const elts = [];
         const collectElements = domElement => {
-            if (domElement.localName === 'linearGradient') {
-                linearGradientElements.push(domElement);
+            if (domElement.localName === tagName) {
+                elts.push(domElement);
             }
             for (let i = 0; i < domElement.childNodes.length; i++) {
                 collectElements(domElement.childNodes[i]);
             }
         };
         collectElements(this._svgTag);
+        return elts;
+    }
+
+    /**
+     * Fix SVGs to comply with SVG spec. Scratch 2 defaults to x2 = 0 when x2 is missing, but
+     * SVG defaults to x2 = 1 when missing.
+     */
+    _transformGradients () {
+        const linearGradientElements = this._collectElements('linearGradient');
+
         // For each gradient element, supply x2 if necessary.
         for (const gradientElement of linearGradientElements) {
             if (!gradientElement.getAttribute('x2')) {
                 gradientElement.setAttribute('x2', '0');
+            }
+        }
+    }
+
+    /**
+     * Fix SVGs to match appearance in Scratch 2, which used nearest neighbor scaling for bitmaps
+     * within SVGs.
+     */
+    _transformImages () {
+        const imageElements = this._collectElements('image');
+
+        // For each image element, set image rendering to pixelated"
+        const pixelatedImages = 'image-rendering: optimizespeed; image-rendering: pixelated;';
+        for (const elt of imageElements) {
+            if (elt.getAttribute('style')) {
+                elt.setAttribute('style',
+                    `${pixelatedImages} ${elt.getAttribute('style')}`);
+            } else {
+                elt.setAttribute('style', pixelatedImages);
             }
         }
     }
@@ -16746,7 +17030,14 @@ class SvgRenderer {
         // Enlarge the bbox from the largest found stroke width
         // This may have false-positives, but at least the bbox will always
         // contain the full graphic including strokes.
-        const halfStrokeWidth = this._findLargestStrokeWidth(this._svgTag) / 2;
+        // If the width or height is zero however, don't enlarge since
+        // they won't have a stroke width that needs to be enlarged.
+        let halfStrokeWidth;
+        if (bbox.width === 0 || bbox.height === 0) {
+            halfStrokeWidth = 0;
+        } else {
+            halfStrokeWidth = this._findLargestStrokeWidth(this._svgTag) / 2;
+        }
         const width = bbox.width + (halfStrokeWidth * 2);
         const height = bbox.height + (halfStrokeWidth * 2);
         const x = bbox.x - halfStrokeWidth;
@@ -16766,13 +17057,11 @@ class SvgRenderer {
      * @returns {string} String representing current SVG data.
      */
     toString (shouldInjectFonts) {
-        let svgDom = this._svgDom;
-        if (shouldInjectFonts) {
-            svgDom = this._svgDom.cloneNode(true /* deep */);
-            inlineSvgFonts(svgDom.documentElement);
-        }
         const serializer = new XMLSerializer();
-        const string = serializer.serializeToString(svgDom);
+        let string = serializer.serializeToString(this._svgDom);
+        if (shouldInjectFonts) {
+            string = inlineSvgFonts(string);
+        }
         return string;
     }
 
@@ -16962,7 +17251,7 @@ module.exports = function (svgString) {
 /***/ (function(module, exports, __webpack_require__) {
 
 const Matrix = __webpack_require__(40);
-const SvgElement = __webpack_require__(5);
+const SvgElement = __webpack_require__(6);
 const log = __webpack_require__(41);
 
 /**
